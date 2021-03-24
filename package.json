@@ -18,6 +18,10 @@
   ],
   "author": "Denys Bondarenko",
   "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/denbon05/phonebook.git"
+  },
   "devDependencies": {
     "@types/jest": "^26.0.21",
     "eslint": "^7.22.0",

@@ -3,6 +3,8 @@
 import http from 'http';
 import debug from 'debug';
 
+import { validate, nextId } from './user.js';
+
 const logHttp = debug('http');
 
 const getParams = (address, host) => {
@@ -60,26 +62,52 @@ const router = {
       })}\n`);
     },
   },
+  POST: {
+    '/users.json': (req, res, matches, usersById, body) => {
+      res.setHeader('Content-Type', 'application/json');
+      const logPost = logHttp.extend('post');
+      logPost('body %O', body);
+      const data = JSON.parse(body[0]);
+      logPost('data %O', data);
+      const errors = validate(data);
+      logPost('errors %O', errors);
+      if (errors.length > 0) {
+        res.writeHead(422);
+        res.end(JSON.stringify({ errors }));
+        return;
+      }
+      const id = nextId();
+      const meta = { location: `/users/${id}.json` };
+      usersById[id] = data;  // eslint-disable-line
+      res.writeHead(201);
+      res.end(JSON.stringify({ meta, data: { id, ...data } }));
+    },
+  },
 };
 
 export default (users) => http.createServer((request, response) => {
-  const { pathname } = new URL(request.url, `http://${request.headers.host}`);
-  logHttp('request.method %s', request.method);
-  const routes = router[request.method];
+  const body = [];
 
-  const result = pathname && Object.keys(routes).find((str) => {
-    const regexp = new RegExp(`^${str}$`);
-    const matches = pathname.match(regexp);
+  request
+    .on('data', (chunck) => body.push(chunck.toString()))
+    .on('end', () => {
+      const { pathname } = new URL(request.url, `http://${request.headers.host}`);
+      logHttp('request.method %s', request.method);
+      const routes = router[request.method];
 
-    if (!matches) return false;
-    logHttp('routes %O', routes);
-    logHttp('matched str %s', str);
-    routes[str](request, response, matches, users);
-    return true;
-  });
+      const result = pathname && Object.keys(routes).find((str) => {
+        const regexp = new RegExp(`^${str}$`);
+        const matches = pathname.match(regexp);
 
-  if (!result) {
-    response.writeHead(404);
-    response.end();
-  }
+        if (!matches) return false;
+        logHttp('route %s', str);
+        routes[str](request, response, matches, users, body);
+        return true;
+      });
+
+      if (!result) {
+        response.writeHead(404);
+        response.end();
+      }
+    });
 });

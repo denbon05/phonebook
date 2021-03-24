@@ -4,7 +4,7 @@ install-deps:
 	npm ci
 
 start:
-	DEBUG="http" DEBUG_COLORS=true npm start
+	DEBUG=http,http:* DEBUG_COLORS=true npm start
 
 lint:
 	npx eslint .
