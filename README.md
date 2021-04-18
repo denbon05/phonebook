@@ -10,6 +10,7 @@
 
 <pre>
 $ git clone https://github.com/denbon05/phonebook.git
+$ cd phonebook
 $ make install
 
 $ make start-backend
