@@ -1,0 +1,16 @@
+include ../mixins/forms.pug
+
+doctype html
+html(lang="en")
+  head
+    title Phonebook
+    script(src=assetPath('main.js'))
+    link(href=assetPath('phonebook.png') type="image/png" rel="shortcut icon")
+    link(href=assetPath('main.css') rel="stylesheet")
+    meta(name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no")
+  body.d-flex.flex-column.min-vh-100.container.p-3
+    each messages, type in reply.flash() || []
+        each message in messages
+          div.alert(class=`alert-${getAlertClass(type)}`)= message
+    block content
+    include ../contact/list.pug

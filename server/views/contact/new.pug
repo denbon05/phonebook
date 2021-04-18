@@ -1,0 +1,9 @@
+extends ../layouts/application.pug
+
+block content 
+  +formFor()(action=route('createContact') method='post').d-flex.flex-column
+    h1.my-4.h3= t('views.addContactTitle')
+    hr
+    +input(contact, 'name', errors)(type="text" placeholder=t('views.placeholders.name'))
+    +input(contact, 'phone', errors)(type="phone" placeholder=t('views.placeholders.phone'))
+    +submit(contact)(value=t('views.add'))

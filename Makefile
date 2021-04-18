@@ -1,10 +1,28 @@
 install: install-deps
 
 install-deps:
-	npm ci
+	npm install
 
 start:
-	DEBUG=http,http:* DEBUG_COLORS=true npm start
+	DEBUG=app:* DEBUG_COLORS=true heroku local -f Procfile
+
+start-backend sb:
+	npx nodemon --exec npx babel-node server/bin/index.js
+
+start-frontend sf:
+	npx webpack serve
+
+build:
+	npm run build
+
+db-migrate:
+	npx knex migrate:latest
+
+test:
+	npm test
+
+cover:
+	npm test -- --coverage --coverageProvider=v8
 
 lint:
 	npx eslint .
@@ -12,10 +30,4 @@ lint:
 fix:
 	npx eslint --fix .
 
-test:
-	npm test -s
-
-cover:
-	npm test -- --coverage --coverageProvider=v8
-
-.PHONY: test
+.PHONY: test start

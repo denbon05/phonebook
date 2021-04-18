@@ -1,0 +1,29 @@
+- const getInputName = (property) => `data[${property}]`
+- const getInputId = (property) => `data_${property}`
+
+mixin formFor(entity = null)
+  form.p-4.mx-5.shadow-sm&attributes(attributes)
+    block
+
+mixin input(entity, propertyName, errors = {})
+  - propertyErrors = _.get(errors, propertyName)
+  - classLine = 'form-control' + (!errors[propertyName] ? '' : ' is-invalid')
+  - inputId = getInputId(propertyName)
+  .form-group(class=(errors[propertyName] && 'has-danger'))
+    input(
+      id= inputId
+      name=getInputName(propertyName)
+      class=classLine
+      value=_.get(entity, propertyName, '')
+    )&attributes(attributes)
+    if !_.isEmpty(propertyErrors)
+      .invalid-feedback= propertyErrors.map(({ message }) => message).join('. ')
+
+mixin submit(form = null)
+  .form-group.text-right
+    input(class='btn btn-primary btn-lg' type='submit')&attributes(attributes)
+
+mixin buttonTo(action, method)
+  form(action=action, method="post")
+    input(name="_method" type="hidden" value=method)
+    input(type='submit')&attributes(attributes)

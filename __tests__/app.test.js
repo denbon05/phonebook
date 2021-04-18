@@ -1,240 +1,100 @@
 // @ts-check
-import axios from 'axios';
 
-import server from '../index.js';
+import {
+  describe, beforeAll, it, expect, afterAll, beforeEach, afterEach,
+} from '@jest/globals';
+import getApp from '../server/index.js';
 
-const hostname = 'http://localhost';
-const port = 9000;
-const base = `${hostname}:${port}`;
+const contact1 = { name: 'Tirion Lanister', phone: '323773' };
 
-let currentServer;
+const existingContacts = [{ id: 1, name: 'John Snow', phone: '894761' }, { id: 2, name: 'Arya Stark', phone: '430876' }];
 
-describe('Phonebook', () => {
-  afterEach(() => {
-    currentServer.close();
+const prepareData = async (app) => {
+  const { knex } = app.objection;
+  await knex('contacts').insert(existingContacts);
+};
+
+describe('test contacts CRD', () => {
+  let app;
+  let knex;
+  let models;
+
+  beforeAll(async () => {
+    app = await getApp();
+    // @ts-ignore
+    knex = app.objection.knex;
+    // @ts-ignore
+    models = app.objection.models;
   });
 
-  describe('Server', () => {
-    it('GET /', () => (
-      new Promise((resolve, reject) => {
-        server(port, async (s) => {
-          currentServer = s;
-          try {
-            const res = await axios.get(base);
-            expect(res.data).toBe('Welcome to The Phonebook\nRecords count: 1000\n');
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        });
-      })
-    ));
-
-    it('GET /search?q=<substr>', () => {
-      const expected = { data: [{ name: 'Miss Lindsey Hermann', phone: '1-559-706-3580' }, { name: 'Miss Herman Orn', phone: '988-099-6371' }, { name: 'Ms. Liana Herman', phone: '(422) 346-7454' }, { name: 'Herman Oberbrunner', phone: '315-607-3728' }] };
-
-      return new Promise((resolve, reject) => {
-        server(port, async (s) => {
-          currentServer = s;
-          const url = new URL('/search.json', base);
-          url.searchParams.set('q', 'HermaN');
-          try {
-            const res = await axios.get(url.toString());
-            expect(res.headers['content-type']).toBe('application/json');
-            expect(res.data).toEqual(expected);
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        });
-      });
-    });
-
-    it('/users.json', () => {
-      const result = {
-        meta: { page: 1, perPage: 3, totalPages: 334 },
-        data: [
-          { name: 'Chelsie Eichmann', phone: '1-466-807-1978' },
-          { name: 'Miss Ewald Dickinson', phone: '699-653-9379' },
-          { name: 'Mauricio Cassin', phone: '(683) 115-8139' },
-        ],
-      };
-
-      return new Promise((resolve, reject) => {
-        server(port, async (s) => {
-          currentServer = s;
-          const url = new URL('/users.json', base);
-          // @ts-ignore
-          url.searchParams.set('perPage', 3);
-          try {
-            const res = await axios.get(url.toString());
-            expect(res.headers['content-type']).toBe('application/json');
-            expect(res.status).toBe(200);
-            expect(res.data).toEqual(result);
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        });
-      });
-    });
-
-    it('/users.json?perPage&page', () => {
-      const result = {
-        meta: { page: 3, perPage: 4, totalPages: 250 },
-        data: [
-          { name: 'Mrs. Marlee Lesch', phone: '(412) 979-7311' },
-          { name: 'Mrs. Mabelle Cormier', phone: '307.095.4754' },
-          { name: 'Kale Macejkovic', phone: '699-803-8578' },
-          { name: 'Miss Verla West', phone: '(546) 173-8884' },
-        ],
-      };
-
-      return new Promise((resolve, reject) => {
-        server(port, async (s) => {
-          currentServer = s;
-          const url = new URL('/users.json', base);
-          // @ts-ignore
-          url.searchParams.set('perPage', 4);
-          // @ts-ignore
-          url.searchParams.set('page', 3);
-          try {
-            const res = await axios.get(url.toString());
-            expect(res.headers['content-type']).toBe('application/json');
-            expect(res.status).toBe(200);
-            expect(res.data).toEqual(result);
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        });
-      });
-    });
+  beforeEach(async () => {
+    await knex.migrate.latest();
+    await prepareData(app);
   });
 
-  describe('Dynamic routes', () => {
-    it('/users/<id>', () => {
-      const result = {
-        data: {
-          name: 'Mrs. Marlee Lesch',
-          phone: '(412) 979-7311',
-        },
-      };
-
-      return new Promise((resolve, reject) => {
-        server(port, async (s) => {
-          currentServer = s;
-          try {
-            const url = new URL('/users/9.json', base);
-            const res = await axios.get(url.toString());
-            expect(res.status).toBe(200);
-            expect(res.data).toEqual(result);
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        });
-      });
+  it('index', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: app.reverse('root'),
     });
 
-    it('/users/<undefined>', () => (
-      new Promise((resolve, reject) => {
-        server(port, async (s) => {
-          currentServer = s;
-          try {
-            const url = new URL('/users/10000.json', base);
-            const res = await axios.get(url.toString(), { validateStatus: () => true });
-            expect(res.status).toBe(404);
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        });
-      })
-    ));
+    expect(response.statusCode).toBe(200);
   });
 
-  describe('POST /', () => {
-    it('POST /users.json', () => {
-      const result = {
-        data: {
-          id: 1001,
-          name: 'Tom',
-          phone: '1234-234-234',
-        },
-        meta: {
-          location: '/users/1001.json',
-        },
-      };
-
-      const data = {
-        name: 'Tom',
-        phone: '1234-234-234',
-      };
-
-      return new Promise((resolve, reject) => {
-        server(port, async (s) => {
-          currentServer = s;
-          try {
-            const url = new URL('/users.json', base);
-            const res = await axios.post(url.toString(), data);
-            expect(res.status).toBe(201);
-            expect(res.data).toEqual(result);
-
-            const url2 = new URL('/users/1001.json', base);
-            const res2 = await axios.get(url2.toString());
-            expect(res2.status).toBe(200);
-            expect(res2.data).toEqual({ data });
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        });
-      });
+  it('new', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: app.reverse('createContact'),
+      payload: {
+        data: contact1,
+      },
     });
+    expect(response.statusCode).toBe(302);
 
-    it('POST /users.json (with errors)', () => {
-      const result = {
-        errors: [
-          {
-            source: 'name',
-            title: 'bad format',
-          },
-          {
-            source: 'phone',
-            title: "can't be blank",
-          },
-        ],
-      };
+    const contact = await models.contact.query().findOne({ phone: contact1.phone });
+    expect(contact).toMatchObject(contact);
+  });
 
-      const data = {
-        name: '$Tom',
-        phone: '',
-      };
-
-      return new Promise((resolve, reject) => {
-        server(port, async (s) => {
-          currentServer = s;
-          try {
-            const url = new URL('/users.json', base);
-            const res = await axios.post(url.toString(), data, { validateStatus: () => true });
-            expect(res.status).toBe(422);
-            res.data.errors.sort((a, b) => {
-              if (a.source > b.source) {
-                return 1;
-              }
-              if (a.source < b.source) {
-                return -1;
-              }
-              return 0;
-            });
-            expect(res.data).toEqual(result);
-            resolve();
-          } catch (e) {
-            reject(e);
-          }
-        });
-      });
+  it('create with the same data', async () => {
+    const existingContact = existingContacts[0];
+    const response = await app.inject({
+      method: 'POST',
+      url: app.reverse('createContact'),
+      payload: {
+        data: existingContact,
+      },
     });
+    expect(response.statusCode).toBe(403);
+  });
+
+  it('create with the empty fields', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: app.reverse('createContact'),
+      payload: {
+        data: { name: '', phone: '' },
+      },
+    });
+    expect(response.statusCode).toBe(403);
+  });
+
+  it('delete', async () => {
+    const existingContact = existingContacts[1];
+    const response = await app.inject({
+      method: 'DELETE',
+      url: app.reverse('deleteContact', { id: existingContact.id }),
+    });
+    expect(response.statusCode).toBe(302);
+
+    const contact = await models.contact.query().findOne({ id: existingContact.id });
+    expect(contact).toBeUndefined();
+  });
+
+  afterEach(async () => {
+    await knex.migrate.rollback(); // * после каждого теста откатываем миграции
+  });
+
+  afterAll(() => {
+    app.close();
   });
 });

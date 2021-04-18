@@ -1,0 +1,17 @@
+list
+  .row.justify-content-center.mt-3
+    .col-8
+      table.table.table-sm.mx-5.my-2.p-5
+        caption(style='caption-side: top;').ml-0= t('views.list.title')
+        tbody
+          if contacts.length == 0
+            tr.row
+              th.col= t('views.list.empty')
+          else 
+            each contact in contacts 
+              tr.row
+                td.col-6
+                  span.d-block.pb-0= contact.name
+                  span.text-muted= contact.phone
+                td.col-2
+                  +buttonTo(route('deleteContact', { id: contact.id }), 'delete')(value=t('views.list.deleteContact') class='btn-link btn')
