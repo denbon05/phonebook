@@ -4,14 +4,21 @@
 
 ## Description
 
-<p>Simple Node.js server</p>
+<p>Phonebook app</p>
 
-[![asciicast](https://asciinema.org/a/401784.svg)](https://asciinema.org/a/401784)
-
-### Run server localy
+### Developer mode
 
 <pre>
 $ git clone https://github.com/denbon05/phonebook.git
 $ make install
-$ make start
+
+$ make start-backend
+$ make start-frontend
+
+// if you have heroku-cli use only <b>make start</b>
 </pre>
+
+<p>After the commands are completed, the application is launched on port <b>4000</b></p>
+<p>In browser follow <b>http://localhost:4000/</b></p>
+
+#### <a href="https://drive.google.com/file/d/1O66mTpSWcmcs_LzSildFZ7UCJ_zc80M5/view?usp=sharing" target="_blank">Locall demonstartion</a>
